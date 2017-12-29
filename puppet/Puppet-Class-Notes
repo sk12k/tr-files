@@ -1,0 +1,240 @@
+Puppet-Class-Notes
+
+########################################
+## Install Puppet Master on CentOS
+########################################
+Steps
+1.
+sudo yum -y install http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+2.
+sudo yum -y install puppet-server
+3.
+Check sestatus (It should be in disable or permissive mode)
+4.
+Check IPtables status for port 8140 (Puppet master should be listening on this port)
+
+#References:
+https://www.digitalocean.com/community/tutorials/how-to-install-puppet-4-in-a-master-agent-setup-on-ubuntu-14-04
+https://www.digitalocean.com/community/tutorials/how-to-install-puppet-4-on-ubuntu-16-04
+########################################
+## Install Puppet Agent in CentOS
+########################################
+$ sudo yum -y install http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm
+$ sudo yum install puppet
+
+########################################
+## Install Puppet Agent in Ubuntu
+########################################
+$ wget https://apt.puppetlabs.com/puppetlabs-release-trusty.deb
+$ sudo dpkg -i puppetlabs-release-trusty.deb
+$ sudo apt-get update
+$ sudo apt-get install puppet
+
+########################################
+## How to re-register your puppet node if there is any problem
+########################################
+
+1. Run the following on Puppet Master:
+
+$ puppet cert --revoke 'nodename'
+$ puppet cert --clean 'nodename'
+
+2. Than run the following on 'nodename'
+
+$ rm -rf /usr/lib/puppet/ssl
+
+3. Now send a request again to puppet master with the following command:
+
+$ puppet agent --server puppetmaster-fqdn --waitforcert 60
+
+4. Now go back again to server and sign the newly created certificate
+
+$ puppet cert --list (you should see your host)
+$ puppet cert --sign 'nodename'
+
+########################################
+# Puppet.conf
+########################################
+[main]
+All the information or settings which is general to puppet.
+
+[master]
+All the information or settings with regards to puppet master
+
+[agent]
+All settings applicable to the agents
+########################################
+
+Step 1 - Puppet master is installed and configured
+Step 2 - Install puppet agent on the node
+Step 3 - make changes to /etc/puppet/puppet.conf
+          server = puppetmaster.mydomain.com
+Step 4 - make sure puppet master is reachable from the node.
+        (if needed, add relevant entry into ""/etc/hosts" file)
+Step 5 - run "sudo puppet agent -t"
+
+ca-server - used for certificate authority reqeusts
+certname - name to be used when contacting puppet master
+
+########################################
+# important "puppet agent" flags
+########################################
+
+-t, --test # This runs
+--noop
+--no-daemonize
+
+########################################
+# Your first puppet manifest file
+########################################
+
+node default {
+  file { '/tmp/info.txt':
+   	ensure  => 'present',
+   	content => "This file has been created in puppet server\n"
+  }
+	file { '/home/vagrant/mydir':
+		ensure  => 'directory',
+  }
+  package { 'screen':
+  	ensure => 'installed',
+	}
+	service { 'puppet':
+		ensure => 'running',
+		enable 	=> true,
+	}
+	user { 'sk12k':
+		ensure 	 => 'present',
+		password => '123456'
+	}
+}
+
+########################################
+#Meta Parameters
+########################################
+
+package { 'openssh-server':
+  ensure => present,
+  before => File['etc/ssh/sshd_config']
+}
+
+file { '/etc/ssh/sshd_config' :
+  ensure  => 'file',
+  mode    => '0644',
+  source  => 'puppet:///modules/sshd/sshd_config',
+  require => Package['openssh-server']
+  notify  => Service['sshd']
+}
+
+service { 'sshd':
+  ensure => 'running',
+  enable => true,
+  subscribe => File['/etc/ssh/sshd_config']
+
+}
+
+## source => puppet master =>/etc/puppet/modules/sshd/files/sshd_config
+
+########################################
+#Chained Arrows
+########################################
+
+package { 'openssh-server':
+  ensure => present,
+} ->
+file { '/etc/ssh/sshd_config' :
+  ensure  => 'file',
+  mode    => '0644',
+  source  => 'puppet:///modules/sshd/sshd_config',
+} ~>
+service { 'sshd':
+  ensure => 'running',
+  enable => true,
+}
+########################################
+site.pp vs init.pp
+########################################
+
+## site.pp => used for site wide configuration settings
+##Location of site.pp
+/etc/puppet/manifests/site.pp
+
+## init.pp => used for module specific configuration settings
+##Location of init.pp
+/etc/puppet/modules/sk12k-ntp/manifests/init.pp
+
+########################################
+puppet module commands
+########################################
+puppet module install modulename
+puppet module list
+puppet module upgrage modulename
+puppet module uninstall modulename
+
+########################################
+# Selectors via ntp module
+########################################
+case $operatingsystem {
+  centos : {$service_name = 'ntpd'}
+  ubuntu : {$service_name = 'ntp'}
+}
+
+package { 'ntp':
+  ensure => installed,
+}
+
+service { 'ntp':
+  name      => $service_name,
+  ensure    => 'running',
+  enable    => true,
+  subscribe => File['ntp.conf'],
+}
+
+file { 'ntp.conf':
+  path    => '/etc/ntp.conf',
+  ensure  => 'file',
+  require => Package['ntp']
+  source  => "puppet:///modules/sk12k-ntp/ntp.conf",
+}
+# source structure => "puppet:///modules/module_name/file_name"
+# The source file above would be located on puppet master at
+# /etc/puppet/modules/sk12k-ntp/files/ntp.conf
+
+########################################
+# Selector for apache package installation
+########################################
+case $operatingsystem {
+  centos : {$package_name = 'httpd'}
+  ubuntu : {$package_name = 'apache2'}
+}
+
+package { 'apache':
+  name   => $package_name,
+  ensure => installed,
+}
+
+########################################
+# file vs template resource
+########################################
+file { 'ntp.conf':
+  path    => '/etc/ntp.conf',
+  ensure  => 'file',
+  source  => "puppet:///modules/sk12k-ntp/ntp.conf",
+}
+# source location  => /etc/puppet/modules/sk12k-ntp/files/ntp.conf
+
+template { 'site-a.conf':
+  path    => '/etc/nginx/sites-enabled/site-a.conf',
+  ensure  => 'file',
+  content => template('nginx/vhost.conf.erb'), #calling template file vhost.conf.erb
+}
+# content file location  => /etc/puppet/modules/nginx/templates/vhost.conf.erb
+
+########################################
+# Further references
+########################################
+
+https://docs.puppet.com/
+https://www.puppetcookbook.com/
+http://fullstack-puppet-docs.readthedocs.io/en/latest/puppet_manifests.html
+http://www.bogotobogo.com/DevOps/Puppet/puppet_basics_of_code_terminology.php

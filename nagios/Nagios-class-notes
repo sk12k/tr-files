@@ -1,0 +1,108 @@
+Nagios Class Notes
+
+#######################################################
+## Alert types in Nagios
+#######################################################
+
+ok       = 0
+warning  = 1
+critical = 2
+unknown  = 3
+#######################################################
+## Important files in Nagios
+#######################################################
+
+#main configuration file:
+/usr/local/nagios/etc/nagios.cfg
+
+#Web Interface configuration file
+/usr/local/nagios/etc/cgi.cfg
+
+#File responsible for users who can log in to web interface
+/usr/local/nagios/etc/htpasswd.users
+
+#Host object definitions
+/usr/local/nagios/etc/hosts.cfg
+
+#Service Object definitions
+/usr/local/nagios/etc/services.cfg
+
+#commands Object definitions
+/usr/local/nagios/etc/commands.cfg
+
+
+Refer following link for more details on configuration files in nagios:
+https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/configmain.html
+
+#######################################################
+## Sample settings in nagios.cfg file
+#######################################################
+
+cfg_file=/etc/nagios3/commands.cfg
+cfg_dir=/etc/nagios3/conf.d
+
+#######################################################
+## Add a new user to access web interface
+#######################################################
+
+$ htpasswd /usr/local/nagios/etc/htpasswd.users newusername
+
+#######################################################
+## Sample host and service Object definitions
+#######################################################
+define host {
+        use                             generic-host
+        host_name                       docker-machine
+        alias                           My docker host
+        address                         172.28.128.7
+        max_check_attempts              5
+        check_period                    24x7
+        notification_interval           30
+        notification_period             24x7
+}
+
+define service {
+        use                             generic-service
+        host_name	      		            docker-machine
+        service_description             PING
+        check_command                   check_ping!100.0,20%!500.0,60%
+}
+
+define service {
+        use                             generic-service
+	      host_name			                  docker-machine
+        service_description             SSH
+        check_command                   check_ssh
+        notifications_enabled           0
+}
+
+#######################################################
+## Explanation of check_ping in above PING service object definition
+#######################################################
+
+check_ping!100.0,20%!500.0,60%
+
+A warning is sent, if the latency(RTA) is >100ms or 20% packet loss.
+An error is sent, if latency is >500ms or 60% packet loss.
+
+#######################################################
+## Command to check nagios configuration file syntax before restarting nagios service
+#######################################################
+
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+
+#Note: Above command might differ depending on your nagios version and where is your nagios.cfg file is located.
+
+#######################################################
+## Nagios Further references
+#######################################################
+
+https://www.digitalocean.com/community/tutorials/how-to-install-nagios-4-and-monitor-your-servers-on-ubuntu-14-04
+https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/objectdefinitions.html
+https://www.digitalocean.com/community/tutorials/how-to-install-nagios-4-and-monitor-your-servers-on-centos-7
+http://www.thegeekstuff.com/2008/05/nagios-30-jumpstart-guide-for-red-hat-overview-installation-and-configuration/
+
+#######################################################
+## A nice article on comparison of nagios with splunk
+#######################################################
+http://saule1508.github.io/splunk-vs-nagios/

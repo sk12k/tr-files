@@ -1,0 +1,171 @@
+Docker Class Notes
+
+###############################################
+## Docker components/Architecture
+###############################################
+
+docker engine/host/runtime/Daemon
+docker images
+docker registry
+docker containers
+docker client
+
+###############################################
+## Analogy for Docker images
+###############################################
+
+VMware    => Templates
+Docker    => images
+Vagrant   => boxes
+AWS       => AMI (Amazon Machine Images)
+Openstack => Snapshots
+
+###############################################
+## Docker Cluster Managers
+###############################################
+Docker Swarm  --> Docker
+Kubernetes    --> Google (now open source)
+Mesosphere    --> Apache
+OpenShift			--> RedHat
+
+###############################################
+## VMs vs Containers
+###############################################
+
+Hypervisors => hardware level virtualization (VMware/KVM/Hyper-V)
+Containers  => OS level virtualization
+
+###############################################
+## Docker Toolbox Architecture explanation
+###############################################
+
+Origin => LXC/chroot/jailed
+
+#Docker Architecture on Linux OS
++++++++++++++++++++++++++++++++++
+Containers
+DockerEngine/host
+LinuxOS
+
+#Docker Architecture on Windows/MacOS
++++++++++++++++++++++++++++++++++
+Container
+DockerEngine/host
+VM running LinuxOS
+VirtualBox
+docker toolbox / boot2docker
+Windows/Macbook
+
+#Windows server 2016 (October 2016)
++++++++++++++++++++++++++++++++++
+Containers (Windows Containers/Hyper-V Container)
+DockerHost
+Win Server 2016
+
+###############################################
+## Fundamental Docker Commands
+###############################################
+
+docker images 											=> lists all images on the docker host
+docker search "keyword" 						=> lists all images with a keyword
+docker pull "imagename:tag" 				=> download the image on your docker host
+docker run -it imagename /bin/bash 	=> create a new container and login as root (root user mode)
+docker run -itd imagename /bin/bash => create a new container in detached mode (or daemonised mode)
+docker stop containerid							=> stop a running container
+docker start containerid						=> start a stopped container
+docker attach containerid/name			=> login/ssh into a running container
+docker inspect containerid/name			=> Display all information about the container/image/network etc.
+docker ps 													=> list all running containers
+docker ps -a 												=> list all containers (stopped and running)
+exit 																=> stop the container and come out of it.
+CTRL+P+Q 														=> to come out of the container without killing/stopping it.
+docker rm container_name/id					=> remove/delete a container
+docker rmi image_name/id						=> remove/delete an image from local repository
+docker rmi image_name/id -f 				=> remove image forcefully (if a container is based on it)
+docker build -t="myimage" .					=> Create a new image named "myimage" from Dockerfile present in current folder
+docker tag imagename newtag					=> tag existing "imagename" to "newtag"
+Example:	docker tag jenkins-slave sk12k/jenkins
+
+docker push sk12k/jenkins						=> push a locally created image to dockerhub (public repository)
+Example: docker push namespace/jenkins-slave
+
+docker commit containerid myimage:tag => commit changes made to the container into a new image
+
+docker history ImageName						=> display the history of the image
+
+###############################################
+## docker repository types
+###############################################
+
+	Local
+	Private
+	Puplic (DockerHub)
+
+## References
+https://docs.docker.com/docker-hub/repos/
+https://blog.codecentric.de/en/2014/02/docker-registry-run-private-docker-image-repository/
+
+###############################################
+## Docker Networking
+###############################################
+
+docker network ls
+docker network inspect bridge
+docker run -d --name = edurekanginx -P nginx:latest
+docker port nginx-edureka $CONTAINERPORT
+docker run -d -p 8080:80
+
+Docker Networking:
+
+Port forwarding
+
+docker run -itd --name myweb -P /bin/bash
+
+Range of ports from 32768 => 65000
+
+-p 80:22
+
+## reconnect an existing container (named mycontainer) to a different network (named mybridge)
+docker network connect mybridge mycontainer
+
+##References
+https://docs.docker.com/engine/userguide/networking/work-with-networks/
+https://docs.docker.com/engine/userguide/networking/
+
+###############################################
+## Docker Volumes
+###############################################
+
+docker run -it -v /hostLog:/log Ubuntu
+
+##References
+https://docs.docker.com/engine/reference/commandline/volume_create/
+https://docs.docker.com/engine/tutorials/dockervolumes/#mount-a-host-directory-as-a-data-volume
+
+###############################################
+## Dockerfile
+###############################################
+
+INSTRUCTIONS arguments
+
+FROM
+RUN
+USER
+VOLUME
+ENV
+ADD
+COPY
+CMD
+ENTRYPOINT
+
+
+LABEL maintainer sk12k
+LABEL Project projectx
+LABEL Developer dev1
+
+##References
+https://docs.docker.com/engine/reference/builder/
+https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/
+https://www.digitalocean.com/community/tutorials/docker-explained-using-dockerfiles-to-automate-building-of-images
+https://github.com/komljen/dockerfile-examples
+https://github.com/kstaken/dockerfile-examples

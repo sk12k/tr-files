@@ -1,0 +1,7 @@
+config.vm.box = "bento/centos-7.3"
+config.vm.hostname = "labnode1"
+config.vm.network "private_network", ip: "172.28.128.5"
+##########################################################
+config.vm.box = "centos/7"
+config.vm.hostname = "chefws"
+config.vm.network "private_network", ip: "172.28.128.6"
